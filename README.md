@@ -74,8 +74,28 @@ curl -X POST http://localhost:3000/mcp \
 
 ## Deploy
 
-Any host that runs a Node process and gives you an HTTPS URL works (Render,
-Railway, Fly.io, a VPS behind a reverse proxy, etc.):
+### Vercel (recommended)
+
+This repo ships a Vercel serverless entrypoint at `api/mcp.ts` that reuses the
+same `createServer()` core as the standalone server. `vercel.json` rewrites
+`/mcp` → `/api/mcp` (and `/health` → `/api/health`), so the public endpoint is
+the clean `https://<project>.vercel.app/mcp`.
+
+1. Import the repo into Vercel (or run `vercel` from the CLI). No build step is
+   needed — Vercel bundles the function directly (`buildCommand` is empty).
+2. Add Environment Variables in the Vercel project settings:
+   - `GITHUB_TOKEN` — your GitHub PAT.
+   - `MCP_AUTH_TOKEN` — a shared secret to gate the endpoint.
+3. Deploy. Your MCP endpoint is `https://<project>.vercel.app/mcp`.
+
+Notes:
+- The serverless function runs in **stateless** mode and returns a single JSON
+  response per request (no long-lived SSE), which suits serverless timeouts.
+- `maxDuration` is set to 30s in `vercel.json`; adjust per your plan if needed.
+
+### Any Node host (Render, Railway, Fly.io, a VPS)
+
+The standalone server (`src/index.ts`) works anywhere you can run a Node process:
 
 1. Set `GITHUB_TOKEN` and `MCP_AUTH_TOKEN` as environment variables.
 2. Build & run: `npm install && npm run build && npm start`.
@@ -111,10 +131,14 @@ Then ask Claude things like *"list my open PRs in owner/repo"* or
 
 ```
 src/
-  index.ts        # HTTP entrypoint (Streamable HTTP, stateless) + auth
-  server.ts       # builds the MCP server and registers tools
+  index.ts        # standalone HTTP entrypoint (Express, Streamable HTTP) + auth
+  server.ts       # builds the MCP server and registers tools (shared core)
   github.ts       # Octokit client factory (token resolution)
   util.ts         # tool result + error helpers
   tools/          # one module per GitHub domain
     meta.ts repos.ts files.ts issues.ts pulls.ts search.ts
+api/
+  mcp.ts          # Vercel serverless entrypoint (reuses createServer)
+  health.ts       # Vercel health probe
+vercel.json       # routing + function config for Vercel
 ```
