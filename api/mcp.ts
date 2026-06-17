@@ -29,20 +29,20 @@ function authorized(req: VercelRequest): boolean {
  * rather than holding open an SSE stream — friendlier to serverless timeouts.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Stateless mode has no session to resume or terminate.
-  if (req.method !== "POST") {
-    res.status(405).json({
+  if (!authorized(req)) {
+    res.status(401).json({
       jsonrpc: "2.0",
-      error: { code: -32000, message: "Method not allowed. Use POST for stateless MCP." },
+      error: { code: -32001, message: "Unauthorized" },
       id: null,
     });
     return;
   }
 
-  if (!authorized(req)) {
-    res.status(401).json({
+  // Stateless mode has no session to resume or terminate.
+  if (req.method !== "POST") {
+    res.status(405).json({
       jsonrpc: "2.0",
-      error: { code: -32001, message: "Unauthorized" },
+      error: { code: -32000, message: "Method not allowed. Use POST for stateless MCP." },
       id: null,
     });
     return;
