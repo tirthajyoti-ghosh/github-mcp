@@ -4,12 +4,20 @@ import { createServer } from "../src/server.js";
 
 const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN?.trim();
 
-/** Optional shared-secret gate (Authorization: Bearer <MCP_AUTH_TOKEN>). */
+/**
+ * Optional shared-secret gate. Accepts the secret either as
+ * `Authorization: Bearer <token>` or as a `?token=<token>` query parameter.
+ * The query form exists because some MCP clients (e.g. Claude's custom
+ * connector dialog) only let you enter a URL, with no custom headers.
+ */
 function authorized(req: VercelRequest): boolean {
   if (!MCP_AUTH_TOKEN) return true;
   const header = (req.headers["authorization"] as string) || "";
   const [scheme, value] = header.split(" ");
-  return scheme === "Bearer" && value === MCP_AUTH_TOKEN;
+  if (scheme === "Bearer" && value === MCP_AUTH_TOKEN) return true;
+  const q = req.query.token;
+  const queryToken = Array.isArray(q) ? q[0] : q;
+  return queryToken === MCP_AUTH_TOKEN;
 }
 
 /**

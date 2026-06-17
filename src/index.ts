@@ -15,13 +15,16 @@ app.get("/health", (_req, res) => {
 
 /**
  * Gate the endpoint with an optional shared secret. When MCP_AUTH_TOKEN is set,
- * callers must present `Authorization: Bearer <token>`.
+ * callers must present it as `Authorization: Bearer <token>` or `?token=<token>`.
  */
 function authorized(req: Request): boolean {
   if (!MCP_AUTH_TOKEN) return true;
   const header = req.header("authorization") || "";
   const [scheme, value] = header.split(" ");
-  return scheme === "Bearer" && value === MCP_AUTH_TOKEN;
+  if (scheme === "Bearer" && value === MCP_AUTH_TOKEN) return true;
+  const q = req.query.token;
+  const queryToken = Array.isArray(q) ? String(q[0]) : (q as string | undefined);
+  return queryToken === MCP_AUTH_TOKEN;
 }
 
 /**

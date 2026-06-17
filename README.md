@@ -103,12 +103,20 @@ The standalone server (`src/index.ts`) works anywhere you can run a Node process
 
 ## Connect it to Claude
 
-Add it as a **custom connector / MCP server** pointing at `https://<host>/mcp`.
+Add it as a **custom connector / MCP server** pointing at the `/mcp` endpoint.
 
-- **Claude web / desktop**: Settings → Connectors → Add custom connector → URL
-  `https://<host>/mcp`. If you set `MCP_AUTH_TOKEN`, add an `Authorization`
-  header with value `Bearer <token>`.
-- **Claude Code (CLI)**:
+The endpoint secret can be supplied two ways, so it works with clients that
+allow custom headers *and* clients that only accept a URL:
+
+- `Authorization: Bearer <MCP_AUTH_TOKEN>` header, or
+- `?token=<MCP_AUTH_TOKEN>` query parameter.
+
+Setup:
+
+- **Claude web / desktop** (the connector dialog only has a URL field, no
+  headers): use the query-parameter form —
+  `https://<host>/mcp?token=YOUR_MCP_AUTH_TOKEN`.
+- **Claude Code (CLI)** (supports headers):
 
   ```bash
   claude mcp add --transport http github https://<host>/mcp \
