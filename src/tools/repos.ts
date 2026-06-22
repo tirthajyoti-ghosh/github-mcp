@@ -4,7 +4,7 @@ import type { ClientFactory } from "../github.js";
 import { handle } from "../util.js";
 
 /** Keep repo payloads small: only the fields a model usually needs. */
-function trimRepo(r: any) {
+export function trimRepo(r: any) {
   return {
     full_name: r.full_name,
     private: r.private,
@@ -26,19 +26,47 @@ export function registerRepoTools(server: McpServer, client: ClientFactory) {
       description: "List repositories the authenticated user has access to.",
       inputSchema: {
         visibility: z.enum(["all", "public", "private"]).optional(),
+        affiliation: z
+          .string()
+          .optional()
+          .describe(
+            "Comma-separated of: owner, collaborator, organization_member. Defaults to all three, which includes repos owned by orgs you belong to."
+          ),
         sort: z.enum(["created", "updated", "pushed", "full_name"]).optional(),
         per_page: z.number().int().min(1).max(100).optional().describe("Default 30, max 100"),
         page: z.number().int().min(1).optional(),
       },
     },
-    ({ visibility, sort, per_page, page }) =>
+    ({ visibility, affiliation, sort, per_page, page }) =>
       handle(async () => {
         const { data } = await client().repos.listForAuthenticatedUser({
           visibility,
+          affiliation,
           sort,
           per_page,
           page,
         });
+        return data.map(trimRepo);
+      })
+  );
+
+  server.registerTool(
+    "list_org_repos",
+    {
+      title: "List an organization's repositories",
+      description:
+        "List repositories belonging to an organization the token can access. Requires the token to have org access (classic PAT with read:org, SSO-authorized; or an approved fine-grained PAT).",
+      inputSchema: {
+        org: z.string().describe("The organization login/slug"),
+        type: z.enum(["all", "public", "private", "forks", "sources", "member"]).optional(),
+        sort: z.enum(["created", "updated", "pushed", "full_name"]).optional(),
+        per_page: z.number().int().min(1).max(100).optional(),
+        page: z.number().int().min(1).optional(),
+      },
+    },
+    ({ org, type, sort, per_page, page }) =>
+      handle(async () => {
+        const { data } = await client().repos.listForOrg({ org, type, sort, per_page, page });
         return data.map(trimRepo);
       })
   );

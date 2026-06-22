@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getOctokit } from "./github.js";
 import { registerMetaTools } from "./tools/meta.js";
 import { registerRepoTools } from "./tools/repos.js";
+import { registerOrgTools } from "./tools/orgs.js";
 import { registerFileTools } from "./tools/files.js";
 import { registerIssueTools } from "./tools/issues.js";
 import { registerPullTools } from "./tools/pulls.js";
@@ -24,6 +25,7 @@ export function createServer(token?: string): McpServer {
 
   registerMetaTools(server, client);
   registerRepoTools(server, client);
+  registerOrgTools(server, client);
   registerFileTools(server, client);
   registerIssueTools(server, client);
   registerPullTools(server, client);
